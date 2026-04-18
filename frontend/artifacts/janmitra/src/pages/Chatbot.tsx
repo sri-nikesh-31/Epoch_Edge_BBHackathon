@@ -4,7 +4,7 @@ import { useUserPreferences } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Send, Loader2, Volume2, VolumeX, Landmark, User, ExternalLink } from "lucide-react";
+import { Mic, MicOff, Send, Loader2, Volume2, VolumeX, Landmark, User, ExternalLink, WifiOff, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 
 const LANG_CODES: Record<string, string> = {
@@ -55,11 +55,26 @@ export default function Chatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const { data: history, refetch } = useGetChatHistory(
+  const {
+    data: history,
+    refetch,
+    isError: historyError,
+  } = useGetChatHistory(
     { sessionId },
-    { query: { enabled: !!sessionId, queryKey: ["chat-history", sessionId] } }
+    {
+      query: {
+        enabled: !!sessionId,
+        queryKey: ["chat-history", sessionId],
+        retry: 1,               // Don't hammer a missing server
+        retryDelay: 2000,
+      },
+    }
   );
+
   const sendChat = useSendChatMessage();
+
+  // True when backend is unreachable
+  const isOffline = historyError;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -103,6 +118,9 @@ export default function Chatbot() {
             u.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
           }
         },
+        onError: () => {
+          // Error displayed inline — no unhandled rejection
+        },
       }
     );
   };
@@ -140,6 +158,16 @@ export default function Chatbot() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+
+      {/* ── Offline banner ── */}
+      {isOffline && (
+        <div className="flex items-center gap-2 bg-amber-50 border-b border-amber-200 px-5 py-2.5 text-sm text-amber-800">
+          <WifiOff className="w-4 h-4 flex-shrink-0" />
+          <span>
+            <strong>API server is offline.</strong> Chat history and responses won't load until the backend is running on port 3000.
+          </span>
+        </div>
+      )}
 
       {/* ── Controls Bar ── */}
       <div className="border-b bg-card px-5 py-3 flex flex-wrap items-center gap-4">
@@ -239,7 +267,7 @@ export default function Chatbot() {
         </div>
 
         {/* Chat history */}
-        {history?.map((msg, i) => (
+        {Array.isArray(history) && history.map((msg, i) => (
           <div key={i} className={`flex items-end gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
             {/* Avatar */}
             {msg.role === "assistant" ? (
@@ -284,7 +312,7 @@ export default function Chatbot() {
 
               {/* Related policy cards for most recent reply */}
               {msg.role === "assistant" &&
-                i === (history?.length ?? 0) - 1 &&
+                i === (Array.isArray(history) ? history.length : 0) - 1 &&
                 sendChat.data?.relatedPolicies &&
                 sendChat.data.relatedPolicies.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-1">
@@ -315,6 +343,14 @@ export default function Chatbot() {
           </div>
         )}
       </div>
+
+      {/* ── Send error notice ── */}
+      {sendChat.isError && !sendChat.isPending && (
+        <div className="mx-5 mb-2 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          Could not reach the API server. Make sure the backend is running on port 3000.
+        </div>
+      )}
 
       {/* ── Input Bar ── */}
       <div className="border-t bg-card px-5 py-4">
