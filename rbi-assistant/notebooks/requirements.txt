@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+requests
+beautifulsoup4
+pdfplumber
+pydub
+soundfile
+mlflow
+databricks-vectorsearch
