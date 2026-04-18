@@ -1,6 +1,6 @@
-# 🏦 RBI Assistant — RAG-Based Financial Intelligence System
+#  RBI Assistant — RAG-Based Financial Intelligence System
 
-## 📌 Overview
+##  Overview
 
 RBI Assistant is a backend-driven system designed to **simplify and democratize access to RBI policies and financial information**.
 
@@ -18,7 +18,7 @@ This system is built to support:
 
 ---
 
-## 🧠 Core Idea
+## Core Idea
 
 Instead of relying only on a language model, this system:
 
@@ -153,7 +153,7 @@ app/rag.py
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ### 1. Install dependencies
 
