@@ -1,67 +1,51 @@
-import streamlit as st
-from pipeline import final_pipeline
-import tempfile
+import os
+import traceback
 
-st.set_page_config(page_title="RBI AI Assistant", layout="wide")
+# 👇 import from SAME folder (important)
+from Final_integration import run_pipeline
 
-st.title("🏦 RBI AI Assistant")
-st.markdown("Ask questions about RBI policies using **text or audio**.")
 
-mode = st.radio("Choose Input Type", ["Text", "Audio"])
+def final_pipeline(input_type: str, content: str):
+    try:
+        if input_type not in ["text", "audio"]:
+            return {"error": "input_type must be 'text' or 'audio'"}
 
-# ================= TEXT =================
-if mode == "Text":
-    query = st.text_area("Enter your question")
+        if not content:
+            return {"error": "content cannot be empty"}
 
-    if st.button("Submit"):
-        if not query.strip():
-            st.warning("Enter a question")
+        # TEXT
+        if input_type == "text":
+            result = run_pipeline(
+                query_text=content,
+                output_filename="text_response"
+            )
+
+        # AUDIO
         else:
-            with st.spinner("Processing..."):
-                res = final_pipeline("text", query)
+            if not os.path.exists(content):
+                return {"error": f"Audio file not found: {content}"}
 
-            if "error" in res:
-                st.error(res["error"])
-            else:
-                st.subheader("📝 Answer")
-                st.write(res["text"])
+            result = run_pipeline(
+                audio_path=content,
+                output_filename="audio_response"
+            )
 
-                if res.get("audio"):
-                    st.subheader("🔊 Audio")
-                    st.audio(res["audio"])
+        return {
+            "text": result.get("answer_text"),
+            "audio": result.get("audio_path"),
+            "sources": result.get("sources", []),
+            "language": result.get("lang_name"),
+            "user_input": result.get("user_input", content)
+        }
 
-                st.subheader("📚 Sources")
-                for s in res["sources"][:3]:
-                    st.markdown(f"**{s.get('chunk_id')}** | score: {s.get('score')}")
-                    st.caption(s.get("text", "")[:200])
+    except Exception as e:
+        return {
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }
 
 
-# ================= AUDIO =================
-else:
-    file = st.file_uploader("Upload audio", type=["wav", "mp3"])
-
-    if file and st.button("Process Audio"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(file.read())
-            path = tmp.name
-
-        with st.spinner("Processing audio..."):
-            res = final_pipeline("audio", path)
-
-        if "error" in res:
-            st.error(res["error"])
-        else:
-            st.subheader("📝 You said")
-            st.write(res["user_input"])
-
-            st.subheader("🧠 Answer")
-            st.write(res["text"])
-
-            if res.get("audio"):
-                st.subheader("🔊 Audio")
-                st.audio(res["audio"])
-
-            st.subheader("📚 Sources")
-            for s in res["sources"][:3]:
-                st.markdown(f"**{s.get('chunk_id')}** | score: {s.get('score')}")
-                st.caption(s.get("text", "")[:200])
+# OPTIONAL
+def run_dashboard():
+    from repo_analyzer import analyze_repo_trends_with_widgets
+    return analyze_repo_trends_with_widgets()
