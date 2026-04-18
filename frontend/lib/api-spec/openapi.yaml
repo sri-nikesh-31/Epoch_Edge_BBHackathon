@@ -1,0 +1,438 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: JanMitra – RBI Policy Assistant API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: policies
+    description: RBI Policy operations
+  - name: chat
+    description: AI Chatbot operations
+  - name: dashboard
+    description: Dashboard summary operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /policies:
+    get:
+      operationId: listPolicies
+      tags: [policies]
+      summary: List all RBI policies
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: affectedGroup
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Policy"
+
+  /policies/{id}:
+    get:
+      operationId: getPolicy
+      tags: [policies]
+      summary: Get a single policy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "404":
+          description: Not found
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary statistics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/policies-by-category:
+    get:
+      operationId: getPoliciesByCategory
+      tags: [dashboard]
+      summary: Get policy count grouped by category
+      responses:
+        "200":
+          description: Policies grouped by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /dashboard/policies-timeline:
+    get:
+      operationId: getPoliciesTimeline
+      tags: [dashboard]
+      summary: Get policies count by month/year timeline
+      responses:
+        "200":
+          description: Timeline data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimelinePoint"
+
+  /dashboard/sector-impact:
+    get:
+      operationId: getSectorImpact
+      tags: [dashboard]
+      summary: Get sector impact distribution
+      responses:
+        "200":
+          description: Sector impact data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SectorImpact"
+
+  /chat/message:
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a message to the AI chatbot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageRequest"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessageResponse"
+
+  /chat/history:
+    get:
+      operationId: getChatHistory
+      tags: [chat]
+      summary: Get recent chat history
+      parameters:
+        - name: sessionId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+
+  /chat/sessions:
+    get:
+      operationId: listChatSessions
+      tags: [chat]
+      summary: List all chat sessions
+      responses:
+        "200":
+          description: List of chat sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatSession"
+    post:
+      operationId: createChatSession
+      tags: [chat]
+      summary: Create a new chat session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+      responses:
+        "201":
+          description: Created session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSession"
+
+  /chat/sessions/{sessionId}:
+    delete:
+      operationId: deleteChatSession
+      tags: [chat]
+      summary: Delete a chat session and its messages
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+    patch:
+      operationId: renameChatSession
+      tags: [chat]
+      summary: Rename a chat session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+              required:
+                - title
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSession"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Policy:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        date:
+          type: string
+        category:
+          type: string
+        affectedGroup:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        circularNumber:
+          type: string
+        impactLevel:
+          type: string
+          enum: [low, medium, high]
+      required:
+        - id
+        - title
+        - date
+        - category
+        - affectedGroup
+        - summary
+        - impactLevel
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalPolicies:
+          type: integer
+        thisMonthPolicies:
+          type: integer
+        categoriesCount:
+          type: integer
+        affectedGroupsCount:
+          type: integer
+        recentPolicies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Policy"
+      required:
+        - totalPolicies
+        - thisMonthPolicies
+        - categoriesCount
+        - affectedGroupsCount
+        - recentPolicies
+
+    CategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+      required:
+        - category
+        - count
+
+    TimelinePoint:
+      type: object
+      properties:
+        period:
+          type: string
+        count:
+          type: integer
+      required:
+        - period
+        - count
+
+    SectorImpact:
+      type: object
+      properties:
+        sector:
+          type: string
+        percentage:
+          type: number
+        count:
+          type: integer
+      required:
+        - sector
+        - percentage
+        - count
+
+    ChatMessageRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        language:
+          type: string
+          enum: [english, hindi, tamil, bengali, marathi, telugu, gujarati, kannada, malayalam, punjabi, odia, urdu, assamese]
+          default: english
+        userType:
+          type: string
+          enum: [farmer, student, msme, salaried, general]
+          default: general
+        sessionId:
+          type: string
+      required:
+        - message
+
+    ChatMessageResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: string
+        response:
+          type: string
+        language:
+          type: string
+        relatedPolicies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Policy"
+        timestamp:
+          type: string
+      required:
+        - id
+        - sessionId
+        - response
+        - language
+        - timestamp
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        language:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - sessionId
+        - role
+        - content
+        - language
+        - timestamp
+
+    ChatSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: string
+        title:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - sessionId
+        - title
+        - createdAt

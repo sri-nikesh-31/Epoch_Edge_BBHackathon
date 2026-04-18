@@ -1,0 +1,164 @@
+Build a full-stack web application called **“JanMitra – RBI Policy Assistant”** focused on democratizing financial access.
+
+## 🎯 Core Purpose
+
+The platform helps users understand RBI policies in simple language, regional languages, and personalized context (job, income, category).
+
+---
+
+## 🏠 1. Home Page
+
+Design a clean modern landing page with:
+
+* Hero section:
+
+  * Title: "Understand RBI Policies in Your Language"
+  * Subtitle: "AI-powered assistant for financial awareness"
+  * CTA buttons: "Try Chatbot" and "Explore Policies"
+
+* Features section:
+
+  * Explain RBI circulars in simple terms
+  * Translate into multiple Indian languages
+  * Voice-enabled chatbot
+  * Personalized impact (farmers, MSMEs, students, etc.)
+
+* How it works:
+
+  1. Upload / select RBI circular
+  2. AI summarizes it
+  3. User selects language
+  4. System explains impact
+
+* Add clean UI using TailwindCSS
+
+---
+
+## 📊 2. Dashboard (Tables + Graphs)
+
+Create a dashboard page showing:
+
+* RBI policy dataset (table view)
+
+  * Columns: Title, Date, Category, Affected Group
+
+* Graphs:
+
+  * Policies by category (bar chart)
+  * Timeline of policies (line chart)
+  * Sector impact distribution (pie chart)
+
+Use chart library (Recharts or Chart.js)
+
+---
+
+## 🤖 3. Chatbot Interface (MAIN FEATURE)
+
+### Layout:
+
+* Left Sidebar:
+
+  * Home
+  * Dashboard
+  * Chatbot (active)
+  * Settings
+
+* Main Chat Area:
+
+  * Chat messages UI
+  * Input box
+
+---
+
+## 🎙️ Chatbot Features:
+
+### 1. Text Input
+
+* User can type queries like:
+
+  * "Explain latest RBI repo rate policy"
+  * "Mujhe RBI ke naye rules batao"
+
+### 2. Voice Input
+
+* Add microphone button
+* Use Web Speech API for speech-to-text
+
+### 3. Language Selection
+
+* Dropdown:
+
+  * English
+  * Hindi
+  * Tamil
+  * Bengali
+  * Marathi
+
+---
+
+## 🧠 AI Backend Features:
+
+### 1. RBI Circular Explainer
+
+* Input: RBI circular text
+* Output:
+
+  * Simple explanation
+  * Bullet points
+  * Key impact
+
+### 2. Personalization Layer
+
+Ask user:
+
+* "Are you a farmer / student / MSME owner?"
+
+Then output:
+
+* "This policy affects you because..."
+
+---
+
+### 3. Multilingual Translation
+
+* Translate explanation into selected language
+
+---
+
+### 4. Fraud Awareness (Optional Section)
+
+* Show alerts like:
+
+  * "Suspicious UPI pattern detected"
+  * "Avoid unknown payment requests"
+
+---
+
+## ⚙️ Tech Stack:
+
+* Frontend: React + TailwindCSS
+* Backend: Node.js / Flask
+* AI: OpenAI / HuggingFace
+* Data: RBI circular dataset
+* Optional: Spark MLlib for anomaly detection
+
+---
+
+## 🎨 UI Requirements:
+
+* Clean fintech style
+* Soft colors (blue/white)
+* Responsive design
+* Sidebar navigation fixed
+
+---
+
+## 🚀 Bonus Features:
+
+* "Who is affected?" auto-detection
+* Voice output (text-to-speech)
+* Save chat history
+
+---
+
+Generate full working code with modular structure.
