@@ -1,225 +1,177 @@
-#  RBI Assistant — RAG-Based Financial Intelligence System
+# RBI Janamitra
 
-##  Overview
-
-RBI Assistant is a backend-driven system designed to **simplify and democratize access to RBI policies and financial information**.
-
-It leverages a **Retrieval-Augmented Generation (RAG)** pipeline to:
-
-* Understand user queries in natural language
-* Retrieve relevant RBI documents/data
-* Generate accurate, contextual responses
-
-This system is built to support:
-
-* Policy explanation
-* Financial guidance
-* Intelligent document querying
+RBI Janamitra is a multilingual AI assistant built on Databricks that enables users to understand RBI policies through text and voice queries. It combines a Retrieval-Augmented Generation (RAG) pipeline with Indian AI models to deliver accessible and accurate financial insights.
 
 ---
 
-## Core Idea
-
-Instead of relying only on a language model, this system:
-
-1. Retrieves **relevant RBI data**
-2. Injects it into the prompt
-3. Generates **fact-grounded answers**
-
-👉 This ensures **accuracy + context-awareness**
-
----
-
-## ⚙️ System Architecture
+## Architecture (Databricks-Centric)
 
 ```
-                ┌────────────────────┐
-                │    User Query      │
-                └─────────┬──────────┘
-                          ↓
-                ┌────────────────────┐
-                │   chatbot.py       │
-                │ (entry interface)  │
-                └─────────┬──────────┘
-                          ↓
-                ┌────────────────────┐
-                │      rag.py        │
-                │ (RAG pipeline)     │
-                └─────────┬──────────┘
-                          ↓
-        ┌──────────────────────────────────┐
-        │  Retrieval Layer                 │
-        │  - embeddings                   │
-        │  - vector search               │
-        └─────────┬──────────────────────┘
-                          ↓
-                ┌────────────────────┐
-                │  Relevant Context  │
-                └─────────┬──────────┘
-                          ↓
-                ┌────────────────────┐
-                │   LLM Generation   │
-                └─────────┬──────────┘
-                          ↓
-                ┌────────────────────┐
-                │   Final Response   │
-                └────────────────────┘
+                         ┌────────────────────────────┐
+                         │        User Interface       │
+                         │  (Streamlit / Notebook UI)  │
+                         └────────────┬───────────────┘
+                                      │
+                                      ▼
+                         ┌────────────────────────────┐
+                         │   Application Layer        │
+                         │ (Chatbot + Repo Analyzer)  │
+                         └────────────┬───────────────┘
+                                      │
+        ┌─────────────────────────────┼─────────────────────────────┐
+        ▼                             ▼                             ▼
+┌────────────────┐        ┌────────────────────┐        ┌────────────────────┐
+│ Sarvam STT     │        │ Sarvam Translation │        │ Sarvam TTS         │
+│ (Speech Input) │        │ (Indian Languages) │        │ (Voice Output)     │
+└────────────────┘        └────────────────────┘        └────────────────────┘
+
+                                      │
+                                      ▼
+                ┌──────────────────────────────────────────────┐
+                │        Databricks RAG Pipeline               │
+                │                                              │
+                │  1. Embeddings (BGE via MLflow)              │
+                │  2. Vector Search (Delta Table)              │
+                │  3. LLM Inference (Llama 3 via MLflow)       │
+                └────────────────────┬─────────────────────────┘
+                                     │
+                                     ▼
+        ┌──────────────────────────────────────────────────────────────┐
+        │                Databricks Data Architecture                  │
+        │                                                              │
+        │  Bronze  → Raw RBI PDFs ingestion (rbi_bronze_docs)          │
+        │  Silver  → Structured extraction (rbi_silver_policy)         │
+        │  Gold    → Analytics-ready tables (rbi_gold_repo_rates)      │
+        │                                                              │
+        │  Vector Store → rbi_embeddings (for retrieval)               │
+        └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📂 Project Structure
+## How Databricks Components Connect
 
-```
-rbi-assistant/
-│
-├── app/                        # Core application logic
-│   ├── chatbot.py              # Handles user queries & flow
-│   ├── rag.py                  # Retrieval + generation logic
-│   ├── repo_analyzer.py        # Repo insights module
-│   ├── audio.py                # Voice input/output (optional)
-│   ├── translate.py            # Multi-language support
-│   ├── utils.py                # Helper functions
-│
-├── pipelines/                  # Offline data pipelines
-│   ├── data_loader.py          # Load RBI data (PDF/API)
-│   ├── chunking.py             # Split text into chunks
-│   ├── embedding.py            # Convert text → embeddings
-│
-├── notebooks/                  # Experimental scripts / testing
-│
-├── config/
-│   └── config.py               # Configurations & constants
-│
-├── main.py                     # Entry point
-├── requirements.txt
-└── README.md
-```
+The system is built using Databricks-native components and follows a structured data and inference pipeline.
 
----
+### Data Pipeline (Bronze → Silver → Gold)
 
-## 🔄 RAG Pipeline Flow
+* Bronze Layer: Raw RBI PDF documents are ingested into Delta tables
+* Silver Layer: LLM-based extraction structures the data into usable fields
+* Gold Layer: Clean, analytics-ready tables are generated for insights
 
-### Step 1: Data Loading
+### RAG Pipeline
 
-* RBI documents (PDFs, circulars, datasets) are ingested
-* Handled in: `pipelines/data_loader.py`
+* RBI documents are chunked and stored in Delta tables
+* Embeddings are generated using the BGE Large model
+* MLflow deployments are used for:
+
+  * Embedding generation
+  * LLM inference (Llama 3.1 / 70B)
+* Retrieval is performed using similarity search over embeddings
+
+### Query Flow
+
+1. User provides input (text or voice)
+2. Speech input is converted using Sarvam STT
+3. Input is translated to English using Facebook NLLB
+4. Relevant documents are retrieved using the RAG pipeline
+5. LLM generates a contextual response
+6. Response is translated back to the user’s language
+7. Output is converted to speech using Sarvam TTS
 
 ---
 
-### Step 2: Chunking
+## Indian AI Integration
 
-* Large documents are split into smaller chunks
-* Improves retrieval accuracy
+The system integrates Indian AI models for multilingual accessibility:
 
-Handled in:
+* Saaras: Speech-to-Text for Indian languages
+* Mayura: Translation across Indian languages
+* Bulbul: Text-to-Speech for Indian voice output
 
-```
-pipelines/chunking.py
-```
-
----
-
-### Step 3: Embedding
-
-* Each chunk is converted into a vector representation
-* Stored in a vector database
-
-Handled in:
-
-```
-pipelines/embedding.py
-```
+This ensures usability for non-English speakers, particularly in rural contexts.
 
 ---
 
-### Step 4: Query Processing
+## Technologies Used
 
-* User query is converted into embedding
-* Similar chunks are retrieved
+### Databricks
 
-Handled in:
+* Delta Tables (Bronze, Silver, Gold architecture)
+* MLflow Deployments for model serving
+* Spark SQL for querying and analytics
+* Notebook-based execution
 
-```
-app/rag.py
-```
+### Models
 
----
-
-### Step 5: Response Generation
-
-* Retrieved context is passed to LLM
-* Final answer is generated
+* LLaMA 3.1 / LLaMA 3 70B (Language Model via Databricks)
+* BGE Large (Embedding Model)
+* Facebook NLLB (Translation Model)
+* Sarvam AI Models (Speech Processing)
 
 ---
 
 ## How to Run
 
-### 1. Install dependencies
+### Databricks (Recommended)
 
+1. Upload the code to Databricks Workspace
+2. Attach a compute cluster
+3. Execute the main notebook or script
+
+```python
+%run /Workspace/Users/<your-username>/app
 ```
+
+---
+
+### Local Execution (Optional)
+
+```bash
 pip install -r requirements.txt
-```
-
-### 2. Run the backend
-
-```
-python main.py
+streamlit run app.py
 ```
 
 ---
 
-## 🧪 Example Flow
+## Demo Steps
 
-```
-User: What is RBI repo rate?
+### Repo Rate Analysis
 
-→ chatbot.py receives query  
-→ rag.py retrieves relevant RBI documents  
-→ context passed to LLM  
-→ response generated  
+1. Select "Repo Rates"
+2. Run analysis
+3. View trend charts and structured data
 
-Output:
-"RBI repo rate is the rate at which..."
-```
+### AI Insights
 
----
+1. Navigate to insights section
+2. Generate analysis
+3. Review model-generated insights
 
-## 🔌 Extensibility
+### RBI Assistant (Chatbot)
 
-This system can be extended to:
+1. Enter a query such as:
+   "What is repo rate?"
+2. Optionally provide voice input
+3. Receive:
 
-* 🔊 Voice-based interaction (`audio.py`)
-* 🌍 Multi-language support (`translate.py`)
-* 📊 Repo analysis (`repo_analyzer.py`)
-* ⚡ Real-time fraud detection models
-
----
-
-## 🎯 Use Case
-
-This project addresses:
-
-> **“Secure and democratize financial access”**
-
-By enabling:
-
-* Easy understanding of RBI policies
-* Access to financial insights in simple language
-* Scalable AI-driven assistance
+   * Text response
+   * Source-backed explanation
+   * Audio output
 
 ---
 
-## 🧠 Future Improvements
+## Key Features
 
-* Vector DB integration (FAISS / Pinecone)
-* Fine-tuned financial LLM
-* Multilingual chatbot
-* Deployment on Databricks / cloud
+* Multilingual AI assistant supporting Indian languages
+* Voice and text-based interaction
+* Databricks-native RAG pipeline
+* Structured data architecture (Bronze, Silver, Gold)
+* Repo rate analytics and AI-generated insights
+* Designed for accessibility and scalability
 
 ---
 
-## 👨‍💻 Authors
+## Deployment
 
-* Team Epoch Edge
-* Built for BB Hackathon
+The system is deployed using Databricks notebooks and integrated services.
